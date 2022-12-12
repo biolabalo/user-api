@@ -1,4 +1,5 @@
 let users = [];
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 const idGenerator = () => {
   const maxId =
@@ -8,28 +9,6 @@ const idGenerator = () => {
 };
 
 class User {
-  checkAuth = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-
-    if (authHeader && authHeader.startsWith("Basic ")) {
-      let base64string = authHeader.split("Basic ")[1];
-      let buffer = Buffer.from(base64string, "base64");
-      let authString = buffer.toString("utf-8");
-
-      if (authString === "test:pass1234") {
-        return next();
-      }
-
-      return res.status(401).json({
-        message: "Invalid token",
-      });
-    }
-
-    return res.status(401).json({
-      message: "Invalid credentials",
-    });
-  };
-
   getAllUsers = (req, res) => {
     let filteredUsers = users;
 
@@ -71,7 +50,7 @@ class User {
 
     if (!user) {
       return res.status(404).json({
-        message: `User with id ${id} not found `,
+        message: `User with id ${req.params.id} not found `,
       });
     }
 
@@ -90,9 +69,23 @@ class User {
       });
     }
 
+    if (gender !== "M" && gender !== "F") {
+      return res.status(400).json({
+        message: "Gender can either be 'M' or 'F' ",
+      });
+    }
+
+    if (!dateRegex.test(date_of_birth)) {
+      return res.status(400).send({ error: "Invalid date format" });
+    }
+
+    if(req.body.id){
+      delete req.body.id
+    }
+
     const newUser = {
       id: idGenerator(),
-      ...req.body,
+      firstname, lastname, gender, date_of_birth,
       date_created: new Date().toISOString(),
       date_updated: new Date().toISOString(),
     };
@@ -105,19 +98,34 @@ class User {
   };
 
   updateUser = (req, res) => {
-    const id = +req.params.id;
+    const { firstname, lastname, gender, date_of_birth } = req.body;
 
+    const id = +req.params.id;
     const user = users.find((user) => user.id === id);
 
     if (!user) {
       return res.status(404).json({
-        message: `User with id ${id} not found `,
+        message: `User with id ${req.params.id} not found `,
       });
+    }
+
+    if (gender !== "M" && gender !== "F") {
+      return res.status(400).json({
+        message: "Gender can either be 'M' or 'F' ",
+      });
+    }
+
+    if (!dateRegex.test(date_of_birth)) {
+      return res.status(400).send({ error: "Invalid date format" });
+    }
+
+    if(req.body.id){
+      delete req.body.id
     }
 
     const updatedUser = {
       ...user,
-      ...req.body,
+      firstname, lastname, gender, date_of_birth,
       date_updated: new Date().toISOString(),
     };
 
